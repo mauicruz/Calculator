@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PEMDAS Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+
+    --bg: #dce5ec;
+    --body: #f4f7f9;
+    --screen: #e6edf2;
+    --ink: #16222c;
+    --muted: #566674;
+    --key: #ffffff;
+    --key-ink: #16222c;
+    --fn: #dfe7ee;
+    --op: #0f5c63;
+    --op-ink: #ffffff;
+    --clear-ink: #b3412c;
+    --eq: #f2a93b;
+    --eq-ink: #2a1a00;
+    --error: #b3412c;
+    --shadow: 0 1px 0 rgba(22, 34, 44, .12), 0 18px 40px -18px rgba(22, 34, 44, .35);
+    --focus: #0f5c63;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e151b;
+      --body: #18232b;
+      --screen: #111a20;
+      --ink: #eaf1f5;
+      --muted: #93a4b1;
+      --key: #22303a;
+      --key-ink: #eaf1f5;
+      --fn: #2c3b47;
+      --op: #1f7a83;
+      --op-ink: #ffffff;
+      --clear-ink: #ff8a73;
+      --eq: #f2b24e;
+      --eq-ink: #2a1a00;
+      --error: #ff8a73;
+      --shadow: 0 1px 0 rgba(0, 0, 0, .4), 0 18px 40px -18px rgba(0, 0, 0, .7);
+      --focus: #7fd0d8;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e151b;
+    --body: #18232b;
+    --screen: #111a20;
+    --ink: #eaf1f5;
+    --muted: #93a4b1;
+    --key: #22303a;
+    --key-ink: #eaf1f5;
+    --fn: #2c3b47;
+    --op: #1f7a83;
+    --op-ink: #ffffff;
+    --clear-ink: #ff8a73;
+    --eq: #f2b24e;
+    --eq-ink: #2a1a00;
+    --error: #ff8a73;
+    --shadow: 0 1px 0 rgba(0, 0, 0, .4), 0 18px 40px -18px rgba(0, 0, 0, .7);
+    --focus: #7fd0d8;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    min-height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 20px 16px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .calc {
+    width: 100%;
+    max-width: 360px;
+    background: var(--body);
+    border-radius: 28px;
+    padding: 22px 18px 18px;
+    box-shadow: var(--shadow);
+  }
+
+  header { padding: 0 6px 14px; }
+  h1 { margin: 0; font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; }
+  .order { margin: 2px 0 0; font-size: .82rem; color: var(--muted); }
+
+  .screen {
+    background: var(--screen);
+    border-radius: 18px;
+    padding: 14px 16px 12px;
+    min-height: 116px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    text-align: right;
+    margin-bottom: 14px;
+  }
+  .sub {
+    min-height: 1.4em;
+    font-size: .95rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+  .sub::-webkit-scrollbar { display: none; }
+  .sub.error { color: var(--error); font-weight: 600; white-space: normal; }
+  .expr {
+    font-size: 2.4rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+  .expr::-webkit-scrollbar { display: none; }
+  .expr.m { font-size: 1.8rem; }
+  .expr.s { font-size: 1.35rem; }
+
+  .keys {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  button {
+    font: inherit;
+    font-size: 1.35rem;
+    font-weight: 600;
+    height: 58px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--key);
+    color: var(--key-ink);
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform .06s ease, filter .12s ease;
+  }
+  button:hover { filter: brightness(.97); }
+  button:active { transform: scale(.96); }
+  button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  button.fn { background: var(--fn); }
+  button.clear { color: var(--clear-ink); }
+  button.op { background: var(--op); color: var(--op-ink); }
+  button.eq { background: var(--eq); color: var(--eq-ink); grid-column: 1 / -1; font-size: 1.5rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    button { transition: none; }
+    button:active { transform: none; }
+  }
+  @media (max-width: 360px) {
+    .calc { padding: 18px 12px 14px; }
+    button { height: 54px; }
+  }
+</style>
+</head>
+<body>
+  <main class="calc">
+    <header>
+      <h1>PEMDAS calculator</h1>
+      <p class="order">Parentheses, exponents, × ÷, then + −</p>
+    </header>
+
+    <section class="screen" aria-label="Display">
+      <div class="sub" id="sub" aria-live="polite"></div>
+      <div class="expr" id="expr">0</div>
+    </section>
+
+    <div class="keys" id="keys">
+      <button class="fn clear" data-k="C" aria-label="Clear all">C</button>
+      <button class="fn" data-k="BACK" aria-label="Delete last character">⌫</button>
+      <button class="fn" data-k="(" aria-label="Open parenthesis">(</button>
+      <button class="fn" data-k=")" aria-label="Close parenthesis">)</button>
+
+      <button data-k="7">7</button>
+      <button data-k="8">8</button>
+      <button data-k="9">9</button>
+      <button class="op" data-k="÷" aria-label="Divide">÷</button>
+
+      <button data-k="4">4</button>
+      <button data-k="5">5</button>
+      <button data-k="6">6</button>
+      <button class="op" data-k="×" aria-label="Multiply">×</button>
+
+      <button data-k="1">1</button>
+      <button data-k="2">2</button>
+      <button data-k="3">3</button>
+      <button class="op" data-k="−" aria-label="Subtract">−</button>
+
+      <button data-k="0">0</button>
+      <button data-k=".">.</button>
+      <button class="op" data-k="^" aria-label="Exponent">^</button>
+      <button class="op" data-k="+" aria-label="Add">+</button>
+
+      <button class="eq" data-k="=" aria-label="Equals">=</button>
+    </div>
+  </main>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Expression parser (no eval) ----------
+  // Grammar, lowest to highest precedence:
+  //   expression -> term (("+" | "-") term)*
+  //   term       -> unary (("*" | "/") unary | implicit-multiply)*
+  //   unary      -> ("+" | "-") unary | power
+  //   power      -> primary ("^" unary)?        (right-associative)
+  //   primary    -> number | "(" expression ")"
+
+  function tokenize(src) {
+    var s = src.replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-");
+    var tokens = [], i = 0, m;
+    var numRe = /^(\d+\.?\d*|\.\d+)(e[+-]?\d+)?/i;
+    while (i < s.length) {
+      var ch = s[i];
+      if (/\s/.test(ch)) { i++; continue; }
+      if ("+-*/^()".indexOf(ch) !== -1) { tokens.push({ t: ch }); i++; continue; }
+      m = numRe.exec(s.slice(i));
+      if (m) { tokens.push({ t: "num", v: parseFloat(m[0]) }); i += m[0].length; continue; }
+      throw new Error("syntax");
+    }
+    return tokens;
+  }
+
+  function evaluate(src) {
+    var tokens = tokenize(src), pos = 0;
+    function peek() { return tokens[pos] ? tokens[pos].t : null; }
+    function next() { return tokens[pos++]; }
+
+    function expression() {
+      var v = term();
+      while (peek() === "+" || peek() === "-") {
+        var op = next().t, r = term();
+        v = op === "+" ? v + r : v - r;
+      }
+      return v;
+    }
+    function term() {
+      var v = unary();
+      for (;;) {
+        var p = peek();
+        if (p === "*" || p === "/") {
+          next();
+          var r = unary();
+          if (p === "/") {
+            if (r === 0) throw new Error("div0");
+            v = v / r;
+          } else {
+            v = v * r;
+          }
+        } else if (p === "(" || p === "num") {
+          v = v * unary(); // implicit multiplication: 2(3), (2)(3), (2)3
+        } else break;
+      }
+      return v;
+    }
+    function unary() {
+      if (peek() === "-") { next(); return -unary(); }
+      if (peek() === "+") { next(); return unary(); }
+      return power();
+    }
+    function power() {
+      var base = primary();
+      if (peek() === "^") { next(); return Math.pow(base, unary()); }
+      return base;
+    }
+    function primary() {
+      var tok = next();
+      if (!tok) throw new Error("syntax");
+      if (tok.t === "num") return tok.v;
+      if (tok.t === "(") {
+        var v = expression();
+        if (peek() !== ")") throw new Error("syntax");
+        next();
+        return v;
+      }
+      throw new Error("syntax");
+    }
+
+    var result = expression();
+    if (pos < tokens.length) throw new Error("syntax");
+    if (Number.isNaN(result)) throw new Error("syntax");
+    if (!Number.isFinite(result)) throw new Error("range");
+    return result;
+  }
+
+  // ---------- Formatting ----------
+  function format(n) {
+    n = parseFloat(n.toPrecision(12));
+    if (Object.is(n, -0)) n = 0;
+    return String(n).replace("-", "−");
+  }
+
+  // Close open parentheses and drop trailing operators so we can preview mid-typing.
+  function completed(expr) {
+    var s = expr.replace(/[+−×÷^]+$/, "");
+    var open = (s.match(/\(/g) || []).length - (s.match(/\)/g) || []).length;
+    while (open-- > 0) s += ")";
+    return s;
+  }
+
+  var MESSAGES = {
+    syntax: "Check the expression",
+    div0: "Can't divide by zero",
+    range: "Result is too large"
+  };
+
+  // ---------- State ----------
+  var expr = "", prev = "", done = false, error = "";
+  var exprEl = document.getElementById("expr");
+  var subEl = document.getElementById("sub");
+
+  function isOp(c) { return "+−×÷^".indexOf(c) !== -1; }
+
+  function render() {
+    var shown = expr || "0";
+    exprEl.textContent = shown;
+    exprEl.className = "expr" + (shown.length > 22 ? " s" : shown.length > 13 ? " m" : "");
+    exprEl.scrollLeft = exprEl.scrollWidth;
+
+    subEl.classList.toggle("error", !!error);
+    if (error) {
+      subEl.textContent = error;
+    } else if (done) {
+      subEl.textContent = prev + " =";
+    } else {
+      var preview = "";
+      if (expr) {
+        try {
+          var text = format(evaluate(completed(expr)));
+          if (text !== expr) preview = "= " + text;
+        } catch (e) { /* incomplete expression: no preview */ }
+      }
+      subEl.textContent = preview;
+    }
+    subEl.scrollLeft = subEl.scrollWidth;
+  }
+
+  function startFresh() { if (done) { expr = ""; prev = ""; done = false; } }
+
+  function digit(d) {
+    startFresh();
+    var cur = (expr.match(/[\d.]*$/) || [""])[0];
+    if (cur === "0") { expr = expr.slice(0, -1) + d; return; }
+    expr += d;
+  }
+  function decimal() {
+    startFresh();
+    var cur = (expr.match(/[\d.]*$/) || [""])[0];
+    if (cur.indexOf(".") !== -1) return;
+    expr += cur === "" ? "0." : ".";
+  }
+  function operator(op) {
+    done = false; prev = "";
+    if (expr === "") { if (op === "−") expr = "−"; return; }
+    var last = expr.slice(-1);
+    if (last === "(") { if (op === "−") expr += op; return; }
+    if (isOp(last)) {
+      if (op === "−" && "×÷^".indexOf(last) !== -1) { expr += op; return; }
+      expr = expr.replace(/[+−×÷^]+$/, "");
+      if (expr === "" || expr.slice(-1) === "(") { if (op === "−") expr += op; return; }
+    }
+    if (expr.slice(-1) === ".") expr = expr.slice(0, -1);
+    expr += op;
+  }
+  function openParen() {
+    startFresh();
+    if (expr.slice(-1) === ".") return;
+    expr += "(";
+  }
+  function closeParen() {
+    if (done) return;
+    var open = (expr.match(/\(/g) || []).length - (expr.match(/\)/g) || []).length;
+    var last = expr.slice(-1);
+    if (open <= 0 || last === "" || last === "(" || last === "." || isOp(last)) return;
+    expr += ")";
+  }
+  function backspace() {
+    if (done) { done = false; prev = ""; }
+    expr = expr.slice(0, -1);
+  }
+  function clearAll() { expr = ""; prev = ""; done = false; }
+  function equals() {
+    if (!expr || done) return;
+    try {
+      var value = format(evaluate(completed(expr)));
+      if (/[+−×÷^]$/.test(expr)) throw new Error("syntax");
+      prev = expr;
+      expr = value;
+      done = true;
+    } catch (e) {
+      error = MESSAGES[e.message] || MESSAGES.syntax;
+    }
+  }
+
+  function press(k) {
+    error = "";
+    if (k >= "0" && k <= "9" && k.length === 1) digit(k);
+    else if (k === ".") decimal();
+    else if (isOp(k)) operator(k);
+    else if (k === "(") openParen();
+    else if (k === ")") closeParen();
+    else if (k === "BACK") backspace();
+    else if (k === "C") clearAll();
+    else if (k === "=") equals();
+    render();
+  }
+
+  document.getElementById("keys").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-k]");
+    if (btn) press(btn.getAttribute("data-k"));
+  });
+
+  // Keyboard support
+  var KEYMAP = { "*": "×", "/": "÷", "-": "−", "+": "+", "^": "^", "(": "(", ")": ")", ".": ".", ",": "." };
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var k = e.key;
+    if (k >= "0" && k <= "9" && k.length === 1) press(k);
+    else if (KEYMAP[k]) press(KEYMAP[k]);
+    else if (k === "Enter" || k === "=") { e.preventDefault(); press("="); }
+    else if (k === "Backspace") press("BACK");
+    else if (k === "Escape" || k === "Delete" || k === "c" || k === "C") press("C");
+    else return;
+    if (document.activeElement && document.activeElement.tagName === "BUTTON" && k === "Enter") {
+      document.activeElement.blur();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
